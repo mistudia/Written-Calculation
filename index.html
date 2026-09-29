@@ -37,12 +37,15 @@
     .strich-zelle { height:3px; }
     .strich-zelle.aktiv { background:#16a34a; }
     .arbeits-gitter .gitterzelle { position:relative; min-height:40px; border-style:dashed; padding:0; }
-    .arbeits-gitter .haupt { width:100%; height:100%; border:0; outline:0; color:#0000c8; background:transparent; text-align:center; font:bold 20px "Courier New",monospace; }
-    .arbeits-gitter .merk-mini { position:absolute; right:2px; bottom:2px; width:15px; height:15px; padding:0; border:1px dotted #94a3b8; border-radius:3px; outline:0; color:#475569; background:#fff; text-align:center; font:bold 11px "Courier New",monospace; }
-    .arbeits-gitter .merk-mini:focus { border-style:solid; background:#e2e8f0; }
+    .gitterzelle.ergebnis-feld { border-style:dashed; padding:0; }
+    .arbeits-gitter .haupt, .ergebnis-feld .haupt { width:100%; height:100%; border:0; outline:0; color:#0000c8; background:transparent; text-align:center; font:bold 20px "Courier New",monospace; }
+    .merk-mini { position:absolute; right:2px; bottom:2px; width:15px; height:15px; padding:0; border:1px dotted #94a3b8; border-radius:3px; outline:0; color:#475569; background:#fff; text-align:center; font:bold 11px "Courier New",monospace; }
+    .merk-mini:focus { border-style:solid; background:#e2e8f0; }
     .arbeits-gitter .gitterzelle.gesperrt { background:#e5e9f0; border-color:#cbd5e1; }
     .arbeits-gitter .gitterzelle.gesperrt input { display:none; }
-    .arbeits-gitter .merk-mini::placeholder { color:transparent; }
+    .merk-mini::placeholder { color:transparent; }
+    .doppelstrich { height:8px; margin:2px 0; background:linear-gradient(#0000c8 0 2px, transparent 2px 6px, #0000c8 6px 8px); }
+    .loesungsweg .doppelstrich { background:linear-gradient(#16a34a 0 2px, transparent 2px 6px, #16a34a 6px 8px); }
     .loesungsweg { display:none; margin-top:7px; padding:7px; border-radius:7px; background:#ecfdf5; }.loesungsweg.sichtbar { display:block; }.loesungsweg .gitterzelle { color:#166534; border-color:#86efac; background:#f0fdf4; }.loesungsweg .strich { background:#16a34a; }
     .eingaben { display:grid; grid-template-columns:1fr; gap:8px; justify-items:center; }.eingabe { width:100%; max-width:190px; }.eingabe label { display:block; margin-bottom:4px; color:#475569; font: bold 12px Arial,sans-serif; }
     .antwort { width:100%; height:47px; padding:8px; border:2px solid #cbd5e1; border-radius:8px; outline:none; text-align:center; font-size:18px; }
@@ -61,7 +64,7 @@
   <main class="app">
     <a class="logo-link" href="https://mistudia.com" target="_blank" rel="noopener noreferrer"><img class="logo" src="mistudia-logo.png" alt="miStudia – Lernen mit Spaß!"></a>
     <h1 id="titel">miStudia – Schriftlich rechnen</h1>
-    <p class="info" id="info">Rechne die Aufgaben <b>schriftlich</b> in dein Heft. Trage das Ergebnis und deine gemerkten Zahlen ein &ndash; die kleinen K&auml;stchen unten rechts in den Feldern sind f&uuml;r den &Uuml;bertrag (&bdquo;1 gemerkt&ldquo;).</p>
+    <p class="info" id="info">Rechne die Aufgaben <b>schriftlich</b> in dein Heft. Trage das Ergebnis und deine gemerkten Zahlen ein &ndash; die kleinen K&auml;stchen sind f&uuml;r den &Uuml;bertrag (&bdquo;1 gemerkt&ldquo;).</p>
     <nav class="lang-box" aria-label="Sprache auswählen">
       <button class="lang aktiv" data-lang="de">🇩🇪</button><button class="lang" data-lang="en">🇺🇸</button><button class="lang" data-lang="es">🇪🇸</button><button class="lang" data-lang="zh">🇨🇳</button>
     </nav>
@@ -84,7 +87,7 @@
     const STUFEN = {
       leicht: { plus: { min: 10, max: 99 }, minus: { aMin: 30, aMax: 99, bMin: 10 }, mal: { aMin: 12, aMax: 99, bMin: 2, bMax: 9 }, geteilt: { bMin: 2, bMax: 5, lMin: 2, lMax: 9 } },
       mittel: { plus: { min: 100, max: 899 }, minus: { aMin: 300, aMax: 999, bMin: 100 }, mal: { aMin: 120, aMax: 899, bMin: 12, bMax: 49 }, geteilt: { bMin: 2, bMax: 9, lMin: 12, lMax: 99 } },
-      schwer: { plus: { min: 1000, max: 8999 }, minus: { aMin: 3000, aMax: 9999, bMin: 1000 }, mal: { aMin: 120, aMax: 899, bMin: 112, bMax: 489 }, geteilt: { bMin: 2, bMax: 9, lMin: 100, lMax: 999 } }
+      schwer: { plus: { min: 1000, max: 8999 }, minus: { aMin: 3000, aMax: 9999, bMin: 1000 }, mal: { aMin: 120, aMax: 899, bMin: 112, bMax: 489 }, geteilt: { bMin: 11, bMax: 89, lMin: 100, lMax: 999 } }
     };
     const DEZIMALSTELLEN = 2;
     function dezStellenFuer(feld) {
@@ -140,6 +143,20 @@
         return `<div class="gitterzelle ${istOp ? 'operator' : ''} ${leer ? 'leer' : ''} ${istGesperrt ? 'gesperrt' : ''}">${istOp ? op : (i >= start ? zeichen[i - start] : '')}${mk}</div>`;
       }).join('')}</div>`;
     }
+    function zweiteZeileEingabe(i, text, op) {
+      const zeichen = String(text).split(''); const start = SP - zeichen.length;
+      return `<div class="gitterzeile">${Array.from({length:SP}, (_,j) => {
+        const r = SP - 1 - j;
+        const istOp = j === start - 1 && op;
+        const zeichenIndex = j - start;
+        const istKomma = j >= start && zeichen[zeichenIndex] === ',';
+        const inhalt = istOp ? op : (j >= start ? zeichen[zeichenIndex] : '');
+        const brauchtBox = !istKomma && r > 0 && (istOp || j >= start);
+        const box = brauchtBox ? `<input class="merk-mini" data-role="merk-mini" data-col="${j}" inputmode="numeric" maxlength="1" aria-label="Gemerkte Zahl an Stelle ${r + 1} zu Aufgabe ${i + 1}">` : '';
+        const leer = !istOp && !inhalt && !brauchtBox;
+        return `<div class="gitterzelle ${istOp ? 'operator' : ''} ${leer ? 'leer' : ''}">${inhalt}${box}</div>`;
+      }).join('')}</div>`;
+    }
     function uebertragAdd(zahlen) { const m = {}; let c = 0; const max = Math.max(...zahlen.map(n => String(n).length)); for (let k = 0; k < max + 1; k++) { let s = c; zahlen.forEach(n => s += ziffer(n, Math.pow(10, k))); c = Math.floor(s / 10); if (c > 0) m[k + 1] = c; } return m; }
     function uebertragSub(a, b) { const m = {}; let bor = 0; const max = String(a).length; for (let k = 0; k < max; k++) { const d = ziffer(a, Math.pow(10, k)) - ziffer(b, Math.pow(10, k)) - bor; if (d < 0) { bor = 1; m[k + 1] = 1; } else bor = 0; } return m; }
     function uebertragMulZeile(a, z, shift) { const m = {}; if (!z) return m; let c = 0; const len = String(a).length; for (let k = 0; k < len; k++) { const p = ziffer(a, Math.pow(10, k)) * z + c; c = Math.floor(p / 10); if (c > 0) m[k + 1 + shift] = c; } return m; }
@@ -167,7 +184,7 @@
         const ende = offset + i + kommaShift;
         const start = ende + 1 - String(cur).length;
         if (!erste) zeilen.push(gitterZeileEnde(String(cur), ende));
-        zeilen.push(gitterZeileEnde(String(prod), ende, '\u2212', uebertragSub(cur, prod)));
+        zeilen.push(gitterZeileEnde(String(prod), ende, '−', uebertragSub(cur, prod)));
         zeilen.push(teilstrich(start - 1, ende));
         rest = neuRest;
         erste = false;
@@ -176,14 +193,41 @@
       return zeilen.join('');
     }
     function gitterZeileLinks(text, offset = 0) { const zeichen = String(text).split(''); return `<div class="gitterzeile">${Array.from({length:SP}, (_,i) => `<div class="gitterzelle ${(i < offset || i >= zeichen.length + offset) ? 'leer' : ''}">${zeichen[i - offset] || ''}</div>`).join('')}</div>`; }
-    function aufgabenZeilen(a) { const da = dezStellenFuer('a'), db = dezStellenFuer('b'); if (art === 'mal') return gitterZeile(`${formatZahl(a.a, da)}${a.zeichen}${formatZahl(a.b, db)}`); if (art === 'geteilt') return gitterZeileLinks(`${formatZahl(a.a, da)}${a.zeichen}${formatZahl(a.b, db)}=`, 1); return gitterZeile(formatZahl(a.a, da)) + gitterZeile(formatZahl(a.b, db), a.zeichen); }
-    function arbeitsGitter(i, zeile, gesperrtRechts = 0) { return `<div class="gitterzeile arbeits-gitter">${Array.from({length:SP}, (_,j) => `<div class="gitterzelle ${j >= SP - gesperrtRechts ? 'gesperrt' : ''}"><input class="merk-mini" inputmode="numeric" maxlength="1" aria-label="Gemerkte Zahl an Stelle ${j+1} in Zeile ${zeile} zu Aufgabe ${i+1}"><input class="haupt" inputmode="numeric" maxlength="1" aria-label="Ziffer ${j+1} in Zwischenschritt ${zeile} zu Aufgabe ${i+1}"></div>`).join('')}</div>`; }
+    function divisionsAufgabeEingabe(i, a) {
+      const da = dezStellenFuer('a'), db = dezStellenFuer('b'), dl = dezStellenFuer('loesung');
+      const text = `${formatZahl(a.a, da)}${a.zeichen}${formatZahl(a.b, db)}=`;
+      const zeichen = text.split(''); const offset = 1;
+      const loesungStr = formatZahl(a.loesung, dl).split('');
+      return `<div class="gitterzeile">${Array.from({length:SP}, (_,j) => {
+        if (j < offset || j < zeichen.length + offset) return `<div class="gitterzelle ${j < offset ? 'leer' : ''}">${zeichen[j - offset] || ''}</div>`;
+        const idx = j - (zeichen.length + offset);
+        const ziffer = loesungStr[idx];
+        if (ziffer === ',') return `<div class="gitterzelle">,</div>`;
+        const box = `<input class="haupt" data-role="haupt" data-col="${j}" inputmode="numeric" maxlength="1" aria-label="Ziffer ${idx + 1} im Ergebnis zu Aufgabe ${i + 1}">`;
+        return `<div class="gitterzelle ergebnis-feld">${box}</div>`;
+      }).join('')}</div>`;
+    }
+    function aufgabenZeilen(a, i = 0) { const da = dezStellenFuer('a'), db = dezStellenFuer('b'); if (art === 'mal') return gitterZeile(`${formatZahl(a.a, da)}${a.zeichen}${formatZahl(a.b, db)}`); if (art === 'geteilt') return divisionsAufgabeEingabe(i, a); return gitterZeile(formatZahl(a.a, da)) + zweiteZeileEingabe(i, formatZahl(a.b, db), a.zeichen); }
+    function arbeitsGitter(i, zeile, gesperrtRechts = 0, zeigeMerk = true) {
+      return `<div class="gitterzeile arbeits-gitter">${Array.from({length:SP}, (_,j) => {
+        const gesperrt = j >= SP - gesperrtRechts;
+        const merkInput = (zeigeMerk && !gesperrt) ? `<input class="merk-mini" data-role="merk-mini" data-col="${j}" inputmode="numeric" maxlength="1" aria-label="Gemerkte Zahl an Stelle ${j+1} in Zeile ${zeile} zu Aufgabe ${i+1}">` : '';
+        return `<div class="gitterzelle ${gesperrt ? 'gesperrt' : ''}">${merkInput}<input class="haupt" data-role="haupt" data-col="${j}" inputmode="numeric" maxlength="1" aria-label="Ziffer ${j+1} in Zwischenschritt ${zeile} zu Aufgabe ${i+1}"></div>`;
+      }).join('')}</div>`;
+    }
     function anzahlArbeitszeilen(a) { if (art === 'mal') return String(a.b).length + 1; if (art === 'geteilt') return 2 * String(a.loesung).length + 1; return 1; }
     function gesperrtFuerZeile(a, z) { if (art !== 'mal') return 0; const stellen = String(a.b).length; return z < stellen ? stellen - 1 - z : 0; }
     function loesungsZeilen(a) {
       const da = dezStellenFuer('a'), db = dezStellenFuer('b'), dl = dezStellenFuer('loesung');
-      if (art === 'plus') { const m = uebertragAdd([a.a, a.b]); return gitterZeile(formatZahl(a.a, da)) + gitterZeile(formatZahl(a.b, db), a.zeichen, verschiebeMerk(m, da)) + '<div class="strich"></div>' + gitterZeile(formatZahl(a.loesung, dl)); }
-      if (art === 'minus') { const negativ = a.loesung < 0; const oben = negativ ? a.b : a.a; const unten = negativ ? a.a : a.b; const m = uebertragSub(oben, unten); return gitterZeile(formatZahl(oben, da)) + gitterZeile(formatZahl(unten, db), a.zeichen, verschiebeMerk(m, da)) + '<div class="strich"></div>' + gitterZeile(formatZahl(a.loesung, dl)); }
+      if (art === 'plus') {
+        const m = uebertragAdd([a.a, a.b]);
+        return gitterZeile(formatZahl(a.a, da)) + gitterZeile(formatZahl(a.b, db), a.zeichen, verschiebeMerk(m, da)) + '<div class="strich"></div>' + gitterZeile(formatZahl(a.loesung, dl));
+      }
+      if (art === 'minus') {
+        const negativ = a.loesung < 0; const oben = negativ ? a.b : a.a; const unten = negativ ? a.a : a.b;
+        const m = uebertragSub(oben, unten);
+        return gitterZeile(formatZahl(oben, da)) + gitterZeile(formatZahl(unten, db), a.zeichen, verschiebeMerk(m, da)) + '<div class="strich"></div>' + gitterZeile(formatZahl(a.loesung, dl));
+      }
       if (art === 'geteilt') { return gitterZeileLinks(`${formatZahl(a.a, da)}${a.zeichen}${formatZahl(a.b, db)}=${formatZahl(a.loesung, dl)}`, 1) + divisionsSchritte(a, 1); }
       const zeilen = [aufgabenZeilen(a), '<div class="strich"></div>'];
       const ziffern = String(a.b).split(''); const stellen = ziffern.length;
@@ -192,14 +236,21 @@
         const shift = stellen - 1 - i;
         zeilen.push(gitterZeile(Number(z) ? String(a.a * Number(z)) + '0'.repeat(shift) : '0', '', uebertragMulZeile(a.a, Number(z), shift), shift));
       });
-      zeilen.push('<div class="strich"></div>');
+      zeilen.push('<div class="doppelstrich"></div>');
       zeilen.push(gitterZeile(formatZahl(a.loesung, dl), '', verschiebeMerk(merkEnde, dl)));
       return zeilen.join('');
+    }
+    function arbeitsZeilenHtml(a, i) {
+      const n = anzahlArbeitszeilen(a);
+      const zeigeMerk = art !== 'plus' && art !== 'minus';
+      const teile = Array.from({length:n}, (_, z) => arbeitsGitter(i, z + 1, gesperrtFuerZeile(a, z), zeigeMerk));
+      if (art === 'mal' && n > 1) teile.splice(n - 1, 0, '<div class="doppelstrich"></div>');
+      return teile.join('');
     }
     function aufgabeHtml(a, i) {
       SP = spaltenFuer(a);
       const t = texte[aktivSprache];
-      return `<article class="aufgabe"><div class="nummer">${i + 1}.</div><div class="rechnung"><div class="rechenblatt" style="--spalten:${SP}">${aufgabenZeilen(a)}<div class="strich"></div><div class="arbeitszeilen">${Array.from({length: anzahlArbeitszeilen(a)}, (_, z) => arbeitsGitter(i, z + 1, gesperrtFuerZeile(a, z))).join('')}</div><div class="loesungsweg" id="schritt-${i}" style="--spalten:${SP}">${loesungsZeilen(a)}</div></div><div class="eingaben"><div class="eingabe"><label>${t.ergebnisLabel}</label><input class="antwort" type="text" inputmode="decimal" aria-label="${t.ergebnisLabel} ${i + 1}" placeholder="${t.ergebnisPlaceholder}"></div></div></div></article>`;
+      return `<article class="aufgabe"><div class="nummer">${i + 1}.</div><div class="rechnung"><div class="rechenblatt" style="--spalten:${SP}">${aufgabenZeilen(a, i)}<div class="strich"></div><div class="arbeitszeilen">${arbeitsZeilenHtml(a, i)}</div><div class="loesungsweg" id="schritt-${i}" style="--spalten:${SP}">${loesungsZeilen(a)}</div></div><div class="eingaben"><div class="eingabe"><label>${t.ergebnisLabel}</label><input class="antwort" type="text" inputmode="decimal" aria-label="${t.ergebnisLabel} ${i + 1}" placeholder="${t.ergebnisPlaceholder}"></div></div></div></article>`;
     }
     function neueAufgaben() {
       const erzwingeIndex = (stufe === 'schwer' && art === 'minus') ? zufall(0, 3) : -1;
@@ -252,10 +303,10 @@
       ergebnis.textContent = texte[aktivSprache].loesungenText;
     }
     const texte = {
-      de: { titel: 'miStudia – Schriftlich rechnen', info: 'Rechne die Aufgaben <b>schriftlich</b> in dein Heft. Trage das Ergebnis und deine gemerkten Zahlen ein &ndash; die kleinen K&auml;stchen unten rechts in den Feldern sind f&uuml;r den &Uuml;bertrag (&bdquo;1 gemerkt&ldquo;).', addition: '➕ Addition', subtraktion: '➖ Subtraktion', multiplikation: '✖️ Multiplikation', division: '➗ Division', leicht: '😊 Leicht', mittel: '🧠 Mittel', schwer: '🔥 Schwer', dezimal: '🔢 Dezimal', pruefen: '✓ Prüfen', loesung: '💡 Lösungen', neu: '🔄 Neue Aufgaben', ergebnisLabel: 'Ergebnis', ergebnisPlaceholder: 'Ergebnis', merktippLabel: 'Merktipp:', merktippText: 'Schreibe die Zahlen ordentlich untereinander. Bei Addition und Subtraktion stehen Einer unter Einern, Zehner unter Zehnern und Hunderter unter Hundertern.', richtig: (n, gesamt) => `Du hast ${n} von ${gesamt} Aufgaben richtig gelöst.`, loesungenText: '💡 Die Lösungen mit den Rechenzeilen werden angezeigt.' },
-      en: { titel: 'miStudia – Written Calculation', info: 'Solve the problems <b>on paper</b> in your notebook. Enter the result and any carried numbers &ndash; the small boxes in the bottom right of the fields are for the carry ("1 carried").', addition: '➕ Addition', subtraktion: '➖ Subtraction', multiplikation: '✖️ Multiplication', division: '➗ Division', leicht: '😊 Easy', mittel: '🧠 Medium', schwer: '🔥 Hard', dezimal: '🔢 Decimals', pruefen: '✓ Check', loesung: '💡 Solutions', neu: '🔄 New problems', ergebnisLabel: 'Result', ergebnisPlaceholder: 'Result', merktippLabel: 'Tip:', merktippText: 'Write the numbers neatly underneath each other. For addition and subtraction, ones go under ones, tens under tens, and hundreds under hundreds.', richtig: (n, gesamt) => `You solved ${n} out of ${gesamt} problems correctly.`, loesungenText: '💡 The solutions with the working steps are now shown.' },
-      es: { titel: 'miStudia – Cálculo escrito', info: 'Resuelve los ejercicios <b>por escrito</b> en tu cuaderno. Anota el resultado y los números que llevas &ndash; las casillas pequeñas abajo a la derecha son para la reserva («llevo 1»).', addition: '➕ Suma', subtraktion: '➖ Resta', multiplikation: '✖️ Multiplicación', division: '➗ División', leicht: '😊 Fácil', mittel: '🧠 Medio', schwer: '🔥 Difícil', dezimal: '🔢 Decimales', pruefen: '✓ Comprobar', loesung: '💡 Soluciones', neu: '🔄 Nuevos ejercicios', ergebnisLabel: 'Resultado', ergebnisPlaceholder: 'Resultado', merktippLabel: 'Consejo:', merktippText: 'Escribe los números ordenados unos debajo de otros. En la suma y la resta, las unidades van bajo las unidades, las decenas bajo las decenas y las centenas bajo las centenas.', richtig: (n, gesamt) => `Has resuelto ${n} de ${gesamt} ejercicios correctamente.`, loesungenText: '💡 Se muestran las soluciones con los pasos del cálculo.' },
-      zh: { titel: 'miStudia – 竖式计算', info: '请在练习本上<b>用竖式</b>计算这些题目。填写结果和你进位的数字 &ndash; 每个格子右下角的小方框用来写进位（"进1"）。', addition: '➕ 加法', subtraktion: '➖ 减法', multiplikation: '✖️ 乘法', division: '➗ 除法', leicht: '😊 简单', mittel: '🧠 中等', schwer: '🔥 困难', dezimal: '🔢 小数', pruefen: '✓ 检查', loesung: '💡 显示答案', neu: '🔄 新题目', ergebnisLabel: '结果', ergebnisPlaceholder: '结果', merktippLabel: '小提示：', merktippText: '把数字整齐地写在下面对齐的位置。做加法和减法时，个位对个位，十位对十位，百位对百位。', richtig: (n, gesamt) => `你答对了 ${gesamt} 题中的 ${n} 题。`, loesungenText: '💡 现在显示带计算步骤的答案。' }
+      de: { titel: 'miStudia – Schriftlich rechnen', info: 'Rechne die Aufgaben <b>schriftlich</b> in dein Heft. Trage das Ergebnis und deine gemerkten Zahlen ein &ndash; die kleinen K&auml;stchen sind f&uuml;r den &Uuml;bertrag (&bdquo;1 gemerkt&ldquo;).', addition: '➕ Addition', subtraktion: '➖ Subtraktion', multiplikation: '✖️ Multiplikation', division: '➗ Division', leicht: '😊 Leicht', mittel: '🧠 Mittel', schwer: '🔥 Schwer', dezimal: '🔢 Dezimal', pruefen: '✓ Prüfen', loesung: '💡 Lösungen', neu: '🔄 Neue Aufgaben', ergebnisLabel: 'Ergebnis', ergebnisPlaceholder: 'Ergebnis', merktippLabel: 'Merktipp:', merktippText: 'Schreibe die Zahlen ordentlich untereinander. Bei Addition und Subtraktion stehen Einer unter Einern, Zehner unter Zehnern und Hunderter unter Hundertern.', richtig: (n, gesamt) => `Du hast ${n} von ${gesamt} Aufgaben richtig gelöst.`, loesungenText: '💡 Die Lösungen mit den Rechenzeilen werden angezeigt.' },
+      en: { titel: 'miStudia – Written Calculation', info: 'Solve the problems <b>on paper</b> in your notebook. Enter the result and any carried numbers &ndash; the small boxes are for the carry ("1 carried").', addition: '➕ Addition', subtraktion: '➖ Subtraction', multiplikation: '✖️ Multiplication', division: '➗ Division', leicht: '😊 Easy', mittel: '🧠 Medium', schwer: '🔥 Hard', dezimal: '🔢 Decimals', pruefen: '✓ Check', loesung: '💡 Solutions', neu: '🔄 New problems', ergebnisLabel: 'Result', ergebnisPlaceholder: 'Result', merktippLabel: 'Tip:', merktippText: 'Write the numbers neatly underneath each other. For addition and subtraction, ones go under ones, tens under tens, and hundreds under hundreds.', richtig: (n, gesamt) => `You solved ${n} out of ${gesamt} problems correctly.`, loesungenText: '💡 The solutions with the working steps are now shown.' },
+      es: { titel: 'miStudia – Cálculo escrito', info: 'Resuelve los ejercicios <b>por escrito</b> en tu cuaderno. Anota el resultado y los números que llevas &ndash; las casillas pequeñas son para la reserva («llevo 1»).', addition: '➕ Suma', subtraktion: '➖ Resta', multiplikation: '✖️ Multiplicación', division: '➗ División', leicht: '😊 Fácil', mittel: '🧠 Medio', schwer: '🔥 Difícil', dezimal: '🔢 Decimales', pruefen: '✓ Comprobar', loesung: '💡 Soluciones', neu: '🔄 Nuevos ejercicios', ergebnisLabel: 'Resultado', ergebnisPlaceholder: 'Resultado', merktippLabel: 'Consejo:', merktippText: 'Escribe los números ordenados unos debajo de otros. En la suma y la resta, las unidades van bajo las unidades, las decenas bajo las decenas y las centenas bajo las centenas.', richtig: (n, gesamt) => `Has resuelto ${n} de ${gesamt} ejercicios correctamente.`, loesungenText: '💡 Se muestran las soluciones con los pasos del cálculo.' },
+      zh: { titel: 'miStudia – 竖式计算', info: '请在练习本上<b>用竖式</b>计算这些题目。填写结果和你进位的数字 &ndash; 每个小方框用来写进位（"进1"）。', addition: '➕ 加法', subtraktion: '➖ 减法', multiplikation: '✖️ 乘法', division: '➗ 除法', leicht: '😊 简单', mittel: '🧠 中等', schwer: '🔥 困难', dezimal: '🔢 小数', pruefen: '✓ 检查', loesung: '💡 显示答案', neu: '🔄 新题目', ergebnisLabel: '结果', ergebnisPlaceholder: '结果', merktippLabel: '小提示：', merktippText: '把数字整齐地写在下面对齐的位置。做加法和减法时，个位对个位，十位对十位，百位对百位。', richtig: (n, gesamt) => `你答对了 ${gesamt} 题中的 ${n} 题。`, loesungenText: '💡 现在显示带计算步骤的答案。' }
     };
     function sprache(s) {
       aktivSprache = s;
@@ -274,10 +325,40 @@
       document.querySelectorAll('.antwort').forEach(inp => inp.placeholder = t.ergebnisPlaceholder);
       ergebnis.textContent = '';
     }
+    function sichtbar(el) { return !!el && !el.closest('.gesperrt'); }
+    function pfeiltastenNavigation() {
+      aufgabenElement.addEventListener('keydown', (e) => {
+        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+        const t = e.target;
+        if (!(t instanceof HTMLInputElement) || !t.dataset.role) return;
+        const rechenblatt = t.closest('.rechenblatt');
+        const rowEl = t.closest('.gitterzeile');
+        if (!rechenblatt || !rowEl) return;
+        const role = t.dataset.role, col = Number(t.dataset.col);
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          const liste = Array.from(rowEl.querySelectorAll(`input[data-role="${role}"]`)).filter(sichtbar);
+          const idx = liste.indexOf(t);
+          const ziel = liste[e.key === 'ArrowRight' ? idx + 1 : idx - 1];
+          if (ziel) { e.preventDefault(); ziel.focus(); }
+          return;
+        }
+        const zeilen = Array.from(rechenblatt.querySelectorAll('.gitterzeile')).filter(z => z.querySelector('input[data-role]'));
+        const zIdx = zeilen.indexOf(rowEl);
+        if (zIdx === -1) return;
+        const zielZeile = zeilen[e.key === 'ArrowDown' ? zIdx + 1 : zIdx - 1];
+        if (!zielZeile) return;
+        let ziel = zielZeile.querySelector(`input[data-role="${role}"][data-col="${col}"]`);
+        if (!sichtbar(ziel)) ziel = null;
+        if (!ziel) { ziel = zielZeile.querySelector(`input[data-col="${col}"]`); if (!sichtbar(ziel)) ziel = null; }
+        if (ziel) { e.preventDefault(); ziel.focus(); }
+      });
+    }
     document.querySelectorAll('.art').forEach(button => button.addEventListener('click', () => { art = button.dataset.art; document.querySelectorAll('.art').forEach(b => b.classList.toggle('aktiv', b === button)); neueAufgaben(); }));
     document.querySelectorAll('.stufe').forEach(button => button.addEventListener('click', () => { stufe = button.dataset.stufe; document.querySelectorAll('.stufe').forEach(b => b.classList.toggle('aktiv', b === button)); neueAufgaben(); }));
     document.querySelectorAll('.lang').forEach(button => button.addEventListener('click', () => sprache(button.dataset.lang)));
-    document.getElementById('pruefen').addEventListener('click', pruefen); document.getElementById('loesung').addEventListener('click', loesungen); document.getElementById('neu').addEventListener('click', neueAufgaben); document.getElementById('jahr').textContent = new Date().getFullYear(); neueAufgaben();
+    document.getElementById('pruefen').addEventListener('click', pruefen); document.getElementById('loesung').addEventListener('click', loesungen); document.getElementById('neu').addEventListener('click', neueAufgaben); document.getElementById('jahr').textContent = new Date().getFullYear();
+    pfeiltastenNavigation();
+    neueAufgaben();
   </script>
 </body>
 </html>
